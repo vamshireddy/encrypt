@@ -42,10 +42,7 @@ bool startwaiting=false;
 long  outputBufferfill=0;
 long  currentInputBufferFill=0;
 
-
-
-
-void left_shift_key(uint8_t *existingKey, long size);
+void left_shift_key(unsigned char *existingKey, long size);
 void *getXorOutput(thread_input *threadinput);
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
@@ -57,14 +54,14 @@ int main(int argc, char **argv) {
 
     int c ;
     char *keyFile;
-    long  numT;
-    char *temp;
+    long  NUM_THREADS;
+    char *temp = malloc(sizeof(char));
     bool verbose=false;
 
     while ((c = getopt(argc, argv, "k:N:d")) != EOF) {
         switch (c) {
             case 'N':           // Take number of threads as the input
-                numT = strtol(optarg,&temp,10);
+                NUM_THREADS = strtol(optarg,&temp,10);
                 break;
             case 'k':           // key file
                 keyFile = malloc(sizeof(char)*strlen(optarg));
@@ -77,7 +74,6 @@ int main(int argc, char **argv) {
                 verbose =true;
                 break;
             default:
-                printf("Invalid argument \n ");
                 printf("%s",HELP_MESSAGE);
         }
     }
@@ -85,7 +81,7 @@ int main(int argc, char **argv) {
     if(verbose){
         printf("verbose output is on\n");
         printf("Key file name is %s\n",keyFile);
-        printf("Number of threads are %ld\n",numT);
+        printf("Number of threads are %ld\n",NUM_THREADS);
     }
 
 
@@ -116,9 +112,9 @@ int main(int argc, char **argv) {
    */
 
 
-   int NUM_THREADS = 10;
 
-   FILE *keyfile = fopen("/Users/harsha/CLionProjects/encrypt/keyfile","rb");
+
+   FILE *keyfile = fopen(keyFile,"rb");
    fseek(keyfile,0L,SEEK_END);
    long chunk_size = ftell(keyfile);
    rewind(keyfile);
@@ -126,7 +122,8 @@ int main(int argc, char **argv) {
 
 
     unsigned  char keybuffer[chunk_size];
-   for(int i=0;i<chunk_size;i++){
+    int i;
+   for(i=0;i<chunk_size;i++){
        keybuffer[i] = fgetc(keyfile);
    }
 
@@ -135,7 +132,7 @@ int main(int argc, char **argv) {
    char inputbuffer[BUFFER_SIZE];
 
    //create a thread pool with NUM_THREADS
-   threadpool_t *pool = threadpool_create(NUM_THREADS,4*NUM_THREADS,0);
+   tpool *pool = create_tpool(NUM_THREADS, 4 * NUM_THREADS);
    int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
    //create a consumer thread and wait for the output buffer to get filled
@@ -178,7 +175,7 @@ int main(int argc, char **argv) {
             memcpy(tempStore->key,keybuffer,chunk_size);
             left_shift_key(keybuffer, chunk_size);
 
-            threadpool_add(pool, (void (*)(void *)) getXorOutput, tempStore, 0);
+            add_work_to_pool(pool, (void (*)(void *)) getXorOutput, tempStore);
         }
 
         // signal the consumer (outputData)  thread that the buffer is full and it can start waiting to see if the
@@ -202,7 +199,8 @@ int main(int argc, char **argv) {
 }
 
 void *getXorOutput(thread_input *threadinput){
-     for(int i=0;i < (threadinput->inputsize) ; i++){
+    int i;
+     for( i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
      }
      pthread_mutex_lock(&m);
@@ -240,16 +238,17 @@ void outputData(char *outputbuffer){
 
 }
 
-void left_shift_key(uint8_t *existingKey, long size){
+void left_shift_key(unsigned char *existingKey, long size){
 
     int i;
-    uint8_t shifted ;
-    uint8_t overflow = (existingKey[0] >>7) & 0x1;
+    unsigned char shifted ;
+    unsigned char overflow = (existingKey[0] >>7) & 0x1;
     for (i = (size - 1); i>=0 ; i--)
     {
         shifted = (existingKey[i] << 1) | overflow;
         overflow = (existingKey[i]>>7) & 0x1;
         existingKey[i] = shifted;
+
 
     }
 }
