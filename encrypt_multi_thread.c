@@ -119,57 +119,55 @@ int main(int argc, char **argv) {
   while(1)
   {
       if(input_queue.size() < MAX_QUEUE_SIZE)
+      {
+	  for(i = 0 i < MAX_QUEUE_SIZE ; i++)
 	  {
-	     for(i = 0 i < MAX_QUEUE_SIZE ; i++;
-		 {
 	       data = pointers[i];
-		   if(data->is_free ==true)
-		   { 
-   		     break;
-		   }
+		if(data->is_free ==true)
+		{ 
+   		   break;
 		}
-		data->is_free = false;
-	    memset(data->buffer,0,key_length);
-		data->token_id = last_assigned_token_id++;
-	    no_of_bytes_read = read(STDIN_FILENO, data->buffer,key_length);
-		data->buffer_size = no_of_bytes_read;
-	    memcpy(data->correspond_key, key , key_length);
-		shift_1bits_left(key,key_length);
-        input_queue.push();
 	  }
-      	  
+	  data->is_free = false;
+	  memset(data->buffer,0,key_length);
+	  data->token_id = last_assigned_token_id++;
+	  no_of_bytes_read = read(STDIN_FILENO, data->buffer,key_length);
+	  data->buffer_size = no_of_bytes_read;
+	  memcpy(data->correspond_key, key , key_length);
+	  shift_1bits_left(key,key_length);
+	  input_queue.push();
+      }
       for(i=0; i<MAX_QUEUE_SIZE; i++)
       {
     	  data = pointers[i];	 
 	      if((data->is_encrypt ==true) && (data->token_id == current_token_id))
           {
-		        fprintf(stdout,	data->buffer);
+		current_token_id ++;
+		fprintf(stdout,data->buffer);
                 data->is_free = true;
           }
       }		  
   }
   
-  
+  return 0;
 }
  
  
- void thread_function()
- {
-	
-	while(1)
+void thread_function()
+{
+    while(1)
+    {
+	/* mutex lock */
+	if(!(input_queue.isEmpty) )
 	{
-	  
-	   /* mutex lock */
-	   if(!(input_queue.isEmpty) )
-       {
-	      data =  input_queue.first();
-	       input_queue.Pop();
-	   }
-	   /* mutex unlock */ 
-            		
-	   getXorOutput(data->buffer, data->correspond_key, data->buffer_size);
-	   data->is_encrypt =true;
+	   data =  input_queue.first();
+	   input_queue.Pop();
 	}
+	/* mutex unlock */ 
+            		
+	getXorOutput(data->buffer, data->correspond_key, data->buffer_size);
+	data->is_encrypt =true;
+    }
 }      
 
 void getXorOutput(uint8_t* buffer1, uint8_t* buffer2, unit32_t size){
