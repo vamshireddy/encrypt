@@ -28,13 +28,7 @@ struct tip {
 };
 
 typedef struct tip thread_input;
-
-pthread_cond_t cv;
-pthread_mutex_t m;
-int count;
-
-
-count = 0;
+pthread_mutex_t t;
 
 bool fxor(FILE *in, FILE *out, FILE *key);
 void shift_1bits_left(uint8_t* array, long size);
@@ -124,7 +118,7 @@ int main(int argc, char **argv) {
 
 
 
-   char outputbuffer[32];                // final output buffer that all threads output will be written to
+   char outputbuffer[30];                // final output buffer that all threads output will be written to
    void *status;
    printf("entering main loop\n");
    int pos=0;                           //global buffer position
@@ -133,20 +127,18 @@ int main(int argc, char **argv) {
    threadpool_t *pool = threadpool_create(NUM_THREADS,4*NUM_THREADS,0);
 
 
-    int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-   while(!feof(stdin)) {
 
-       //pthread_t *threads = malloc(sizeof(pthread_t)* NUM_THREADS);
+   while(!feof(inputfile)) {
+
+       pthread_t *threads = malloc(sizeof(pthread_t)* NUM_THREADS);
        thread_input *inputs = malloc(sizeof(thread_input) * NUM_THREADS);
         int spawned_threads=0;
-
-        while(!feof(stdin) && spawned_threads < NUM_THREADS){
-            printf("entering second main \n");
+        while(!feof(inputfile) && spawned_threads < NUM_THREADS){
             thread_input *tempStore = inputs+spawned_threads;
             tempStore->input= malloc(sizeof(char) * chunk_size);
-            long bytesRead = fread(tempStore->input,chunk_size,1,stdin);
-            printf("byts read %d\n",bytesRead);
+            long bytesRead = fread(tempStore->input,chunk_size,1,inputfile);
+
             if(bytesRead == 0) { break;}
             tempStore->inputsize = chunk_size;
             tempStore->key = malloc(sizeof(char) * chunk_size);
@@ -159,23 +151,20 @@ int main(int argc, char **argv) {
             shift_1bits_left(keybuffer,chunk_size);
             spawned_threads++;
         }
+
         // collect the data for that spawned threads so far
-       pthread_mutex_lock(&m);
-       while(count<spawned_threads){
-           pthread_cond_wait(&cv, &m);
-       }
-       pthread_mutex_unlock(&m);
-       count=0;
        memset(outputbuffer+pos,0, spawned_threads* chunk_size);
-       for(int  j=0;j<spawned_threads;j++){
+       for(int j=0; j < spawned_threads ;j++){
+           pthread_join(threads[j],&status);
+           printf("copying thread %d\n",j);
            memcpy(outputbuffer+pos,inputs[j].output,inputs[j].inputsize);
-           pos=pos+inputs[j].inputsize;
-       }
-       write(outwrite,outputbuffer,32);
+           pos = (int) (pos + inputs[j].inputsize);
+        }
+       free(threads);
        free(inputs);
    }
-
-
+    int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    write(outwrite,outputbuffer,24);
     close(outwrite);
     return 0;
 }
@@ -184,11 +173,6 @@ void *getXorOutput(thread_input *threadinput){
      for(int i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
      }
-
-    pthread_mutex_lock(&m);
-    count++;
-    pthread_cond_signal(&cv);
-    pthread_mutex_unlock(&m);
 }
 
 void shift_1bits_left(uint8_t* array, long size)
