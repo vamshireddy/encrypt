@@ -256,10 +256,7 @@ static void *worker_thread(void *threadpool)
         /* Get to work */
         (*(task.function))(task.argument);
     }
-
     pool->started--;
-
     pthread_mutex_unlock(&(pool->lock));
     pthread_exit(NULL);
-    return(NULL);
 }
