@@ -31,13 +31,18 @@ pthread_cond_t cv;
 pthread_mutex_t m;
 pthread_cond_t cv2;
 pthread_mutex_t m2;
+pthread_cond_t cv3;
+pthread_mutex_t m3;
+
+
 bool outputDone=false;
 bool inputDone=false;
+bool startwaiting=false;
 
 long  outputBufferfill=0;
-long currentBufferFill=0;
-long BUFFER_SIZE;
-long bytes_in_buffer;
+long  currentInputBufferFill=0;
+
+
 
 
 void left_shift_key(uint8_t *existingKey, long size);
@@ -117,7 +122,7 @@ int main(int argc, char **argv) {
    fseek(keyfile,0L,SEEK_END);
    long chunk_size = ftell(keyfile);
    rewind(keyfile);
-   BUFFER_SIZE = BUFFER_CONSTANT * NUM_THREADS * chunk_size;
+   long BUFFER_SIZE = BUFFER_CONSTANT * NUM_THREADS * chunk_size;
 
 
     unsigned  char keybuffer[chunk_size];
@@ -139,47 +144,57 @@ int main(int argc, char **argv) {
 
    while(!feof(stdin)) {
 
-       bytes_in_buffer= fread(inputbuffer,CHAR_SIZE,BUFFER_SIZE,stdin);
+       long bytes_in_buffer= fread(inputbuffer,CHAR_SIZE,BUFFER_SIZE,stdin);
        if(bytes_in_buffer==0) {
            inputDone=true;
            break;
 
        }
 
-      currentBufferFill=0;
+      currentInputBufferFill=0;
        long processed_bytes=0;
 
         while(processed_bytes < bytes_in_buffer){
             thread_input *tempStore = malloc(sizeof(thread_input));
+            tempStore->output = outputbuffer+processed_bytes;
             if(processed_bytes+chunk_size < bytes_in_buffer) {
                 tempStore->input = malloc(sizeof(char) * chunk_size);
                 tempStore->inputsize = chunk_size;
                 memcpy(tempStore->input,inputbuffer+processed_bytes,chunk_size);
+
                 processed_bytes +=chunk_size;
-                currentBufferFill=currentBufferFill+chunk_size;
+                currentInputBufferFill=currentInputBufferFill+chunk_size;
+
             }else{
                 long left_over = bytes_in_buffer-processed_bytes;
                 tempStore->input= malloc(sizeof(char) * (left_over));
                 tempStore->inputsize = left_over;
                 memcpy(tempStore->input,inputbuffer+processed_bytes,left_over);
                 processed_bytes+=left_over;
-                currentBufferFill=currentBufferFill+left_over;
-                inputDone=true;
+                currentInputBufferFill=currentInputBufferFill+left_over;
+                //inputDone=true;
             }
             tempStore->key = malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
             left_shift_key(keybuffer, chunk_size);
-            tempStore->output = outputbuffer+processed_bytes;
+
             threadpool_add(pool, (void (*)(void *)) getXorOutput, tempStore, 0);
         }
 
-        //wait on signal from producer(which prints to screen)  that it has finished one iter size of data
-       pthread_mutex_lock(&m2);
-       while(outputDone != true){
+        // signal the consumer (outputData)  thread that the buffer is full and it can start waiting to see if the
+        // outuput is completed by worker threads
+        pthread_mutex_lock(&m3);
+        pthread_cond_signal(&cv3);
+        startwaiting=true;
+        pthread_mutex_unlock(&m3);
+
+        // wait on signal from Consumer(ouputData, which prints to screen)  that it has finished one iter size of data
+        pthread_mutex_lock(&m2);
+        while(outputDone != true){
            pthread_cond_wait(&cv2, &m2);
-       }
-       outputDone=false;
-       pthread_mutex_unlock(&m2);
+        }
+        outputDone=false;
+        pthread_mutex_unlock(&m2);
 
    }
    close(outwrite);
@@ -192,31 +207,35 @@ void *getXorOutput(thread_input *threadinput){
      }
      pthread_mutex_lock(&m);
     outputBufferfill += threadinput->inputsize;
-    if(outputBufferfill == currentBufferFill) pthread_cond_signal(&cv);
+    pthread_cond_signal(&cv);
     pthread_mutex_unlock(&m);
     //act like a producer and add the output to corresponding buffer location
 }
 
-
 void outputData(char *outputbuffer){
 
-
   while(!inputDone) {
+      pthread_mutex_lock(&m3);
+      while(!startwaiting ){
+          pthread_cond_wait(&cv3,&m3);
+      }
+      pthread_mutex_unlock(&m3);
+
       pthread_mutex_lock(&m);
-      while (outputBufferfill < bytes_in_buffer) {
+      while (outputBufferfill < currentInputBufferFill) {
           pthread_cond_wait(&cv, &m);
       }
-
       write(fileno(stdout), outputbuffer, outputBufferfill);
+      memset(outputbuffer,0,outputBufferfill);
       outputDone=true;
       outputBufferfill = 0;
+      pthread_mutex_unlock(&m);
 
       //signal the main thread to process to fetch/read data from stdin
       pthread_mutex_lock(&m2);
       pthread_cond_signal(&cv2);
       pthread_mutex_unlock(&m2);
 
-      pthread_mutex_unlock(&m);
   }
 
 }
