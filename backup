@@ -1,0 +1,27 @@
+
+  // int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   //write(outwrite,outp,8);
+
+
+
+
+   bool fxor(FILE *in, FILE *out, FILE *key)
+   {
+       unsigned char in_byte;
+       unsigned char key_byte;
+       int c;
+       while ((c = fgetc(in)) != EOF) {
+           in_byte = c;
+
+           if ((c = fgetc(key)) == EOF) {
+               rewind(key);
+               c = fgetc(key);
+           }
+           key_byte = c;
+
+           if (fputc(in_byte ^ key_byte, out) == EOF) {
+               return false;
+           }
+       }
+       return true;
+   }
