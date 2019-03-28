@@ -37,10 +37,11 @@ int count;
 count = 0;
 
 bool fxor(FILE *in, FILE *out, FILE *key);
-void shift_1bits_left(uint8_t* array, long size);
+void left_shift_key(uint8_t *existingKey, long size);
 void *getXorOutput(thread_input *threadinput);
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
+const int CHAR_SIZE= sizeof(char);
 
 int main(int argc, char **argv) {
 
@@ -120,13 +121,11 @@ int main(int argc, char **argv) {
    for(int i=0;i<chunk_size;i++){
        keybuffer[i] = fgetc(keyfile);
    }
-   // End of dummy input
 
 
-
-   char outputbuffer[32];                // final output buffer that all threads output will be written to
+   char outputbuffer[NUM_THREADS*chunk_size];                // final output buffer that all threads output will be written to
    void *status;
-   printf("entering main loop\n");
+   //printf("entering main loop\n");
    int pos=0;                           //global buffer position
 
    //create a thread pool with NUM_THREADS
@@ -137,46 +136,46 @@ int main(int argc, char **argv) {
 
    while(!feof(stdin)) {
 
-       //pthread_t *threads = malloc(sizeof(pthread_t)* NUM_THREADS);
        thread_input *inputs = malloc(sizeof(thread_input) * NUM_THREADS);
         int spawned_threads=0;
 
         while(!feof(stdin) && spawned_threads < NUM_THREADS){
-            printf("entering second main \n");
+           // printf("entering second main \n");
             thread_input *tempStore = inputs+spawned_threads;
             tempStore->input= malloc(sizeof(char) * chunk_size);
-            long bytesRead = fread(tempStore->input,chunk_size,1,stdin);
-            printf("byts read %d\n",bytesRead);
+            long bytesRead = fread(tempStore->input, CHAR_SIZE, chunk_size, stdin);
+            //printf("byts read %d\n", (int) bytesRead);
             if(bytesRead == 0) { break;}
-            tempStore->inputsize = chunk_size;
+            tempStore->inputsize = bytesRead;
             tempStore->key = malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
 
             tempStore->output = malloc(sizeof(char)* bytesRead);
             tempStore->thread_id=spawned_threads;
-            //pthread_create(threads+spawned_threads, NULL, (void *(*)(void *)) getXorOutput, tempStore);
-            threadpool_add(pool,getXorOutput,tempStore,0);
-            shift_1bits_left(keybuffer,chunk_size);
+            threadpool_add(pool, (void (*)(void *)) getXorOutput, tempStore, 0);
+            left_shift_key(keybuffer, chunk_size);
             spawned_threads++;
         }
-        // collect the data for that spawned threads so far
+
+        //collect the data for that spawned threads so far
        pthread_mutex_lock(&m);
        while(count<spawned_threads){
            pthread_cond_wait(&cv, &m);
        }
        pthread_mutex_unlock(&m);
+
        count=0;
-       memset(outputbuffer+pos,0, spawned_threads* chunk_size);
+       int buffsize=0;
+       memset(outputbuffer,0, spawned_threads* chunk_size);
        for(int  j=0;j<spawned_threads;j++){
-           memcpy(outputbuffer+pos,inputs[j].output,inputs[j].inputsize);
-           pos=pos+inputs[j].inputsize;
+           memcpy(outputbuffer+buffsize,inputs[j].output,inputs[j].inputsize);
+           buffsize = buffsize+inputs[j].inputsize;
        }
-       write(outwrite,outputbuffer,32);
+       write(fileno(stdout),outputbuffer,buffsize);
        free(inputs);
+
    }
-
-
-    close(outwrite);
+   close(outwrite);
     return 0;
 }
 
@@ -184,24 +183,22 @@ void *getXorOutput(thread_input *threadinput){
      for(int i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
      }
-
     pthread_mutex_lock(&m);
     count++;
     pthread_cond_signal(&cv);
     pthread_mutex_unlock(&m);
 }
 
-void shift_1bits_left(uint8_t* array, long size)
-{
+void left_shift_key(uint8_t *existingKey, long size){
+
     int i;
-    uint8_t shifted = 0x00;
-    uint8_t overflow = (array[0] >>7) & 0x1;
+    uint8_t shifted ;
+    uint8_t overflow = (existingKey[0] >>7) & 0x1;
     for (i = (size - 1); i>=0 ; i--)
     {
-        //printf("i value %d\t",i);
-        shifted = (array[i] << 1) | overflow;
-        overflow = (array[i]>>7) & 0x1;
-        array[i] = shifted;
+        shifted = (existingKey[i] << 1) | overflow;
+        overflow = (existingKey[i]>>7) & 0x1;
+        existingKey[i] = shifted;
 
     }
 }
