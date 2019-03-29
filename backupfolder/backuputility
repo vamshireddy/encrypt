@@ -1,0 +1,26 @@
+  /*
+   *
+   * Binary file generator
+   *
+  */
+
+    /*
+    char inputdata[] = {0xF0,0xF0};
+    int inputfile = open("/Users/harsha/CLionProjects/encrypt/keyfile",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+    for(int i =0;i <2;i++){
+        write(inputfile,inputdata,2);
+    }
+    */
+
+    /*
+    char inputdata[] = {0x1,0x2,0x3,0x4,0x11,0x12,0x13,0x14,0x1,0x2,0x3,0x4,0x11,0x12,0x13,0x14,0x1,0x2,0x3,0x4,0x11,0x12,0x13,0x14};
+    int inputfile = open("/Users/harsha/CLionProjects/encrypt/input",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+     write(inputfile,inputdata,24);
+    */
+
+
+  /*
+   * Make the dummy input ready for testing
+   */
+

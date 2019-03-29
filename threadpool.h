@@ -78,7 +78,7 @@ tpool *create_tpool(int thread_count, int queue_size);
  * threadpool_error_t for codes).
  */
 int add_work_to_pool(tpool *pool, void (*routine)(void *),
-                   void *arg);
+                     void *arg);
 
 /**
  * @function threadpool_destroy
