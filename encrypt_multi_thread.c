@@ -104,13 +104,13 @@ int main(int argc, char **argv) {
     data = (data_buf_t *)malloc(sizeof(data_buf_t));
 	data->buffer = (uint8_t*)malloc(sizeof(uint8_t)*key_length);
 	data->correspond_key = (uint8_t*)malloc(sizeof(uint8_t)*key_length);
-    pointers[i] = &data ;
+    pointers[i] = data ;
   }
     
  
   for(i=0 ; i< num_of_threads ; i++)
   {  
-     /* create thereads*/
+     /* create threads*/
 	  pthread_create(&thread_ids[i], NULL, thread_function,NULL );
 	
    }
@@ -139,12 +139,14 @@ int main(int argc, char **argv) {
       }
       for(i=0; i<MAX_QUEUE_SIZE; i++)
       {
-    	  data = pointers[i];	 
-	      if((data->is_encrypt ==true) && (data->token_id == current_token_id))
+    	  data = pointers[i];
+	  if((data->is_free == false) &&(data->is_encrypt ==true) && 
+	          (data->token_id == current_token_id))
           {
 		current_token_id ++;
 		fprintf(stdout,data->buffer);
                 data->is_free = true;
+		
           }
       }		  
   }
