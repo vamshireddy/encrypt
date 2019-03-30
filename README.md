@@ -46,6 +46,10 @@
        tests: 
             The folder contains small tests that I developed to test. 
             It is not exhaustive though.  
+            
+#validation : 
+     1. Memory leaks verification via VALGRIND . To make sure that I am freeing up resources in my code .
+     2. Some simple shell script to verify the correctness of the output. 
 
 #Validation : 
 
@@ -54,9 +58,8 @@
 
 #Scope for improvements: 
     
-    1.  Choosing the read buffer constants ( the amount of data 
-        that is read at once form the stream) based on the 
-        undelyugn cache architecture. If we model our input reads
+    1.  Choosing the read buffer constants ( the amount of data that is read at once form the stream) 
+        based on the  undelyugn cache architecture. If we model our input reads
         in such a way that no threads will run into one another cache lines 
         and thus lead to thrashign , we will get maximum performance gain. 
      
