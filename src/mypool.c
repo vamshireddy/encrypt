@@ -19,7 +19,7 @@
  *
  */
 
-#include "mypool.h"
+#include "../inc/mypool.h"
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -29,7 +29,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include <stdbool.h>
-#include "wrappers.h"
+#include "../inc/wrappers.h"
 
 
 static void worker_thread(tpool *);

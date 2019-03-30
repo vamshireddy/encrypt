@@ -4,7 +4,7 @@
 
 
 
-#include "../mypool.h"
+#include "../inc/mypool.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>

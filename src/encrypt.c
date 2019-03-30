@@ -45,9 +45,9 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#include "encrypt.h"
-#include "mypool.h"
-#include "wrappers.h"
+#include "../inc/encrypt.h"
+#include "../inc/mypool.h"
+#include "../inc/wrappers.h"
 
 #define POOL_QUE_CNST 5
 #define RIGHT_SHIFT_BITS 7

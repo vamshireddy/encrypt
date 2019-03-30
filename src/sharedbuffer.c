@@ -12,7 +12,7 @@
  *
  *
  */
-#include "sharedbuffer.h"
+#include "../inc/sharedbuffer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>

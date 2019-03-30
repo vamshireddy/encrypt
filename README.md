@@ -47,6 +47,11 @@
             The folder contains small tests that I developed to test. 
             It is not exhaustive though.  
 
+#Validation : 
+
+    1. Memory leaks verification via VALGRIND . To make sure that I am freeing up resources in my code . 
+    2. Some simple shell script to verify the correctness of the output.
+
 #Scope for improvements: 
     
     1.  Choosing the read buffer constants ( the amount of data 
@@ -60,7 +65,9 @@
         But the code should be robust against all failures , so error 
         checking can be improved. 
      
-     3. Thread stress testing : I did not do full fledged stress test of the 
+     3. Tuning the parametrs based on the workload.
+     
+     4 .Thread stress testing : I did not do full fledged stress test of the 
         like by spawning very large number of threads that can be done. 
         And we can profile the code accordingly    
         
