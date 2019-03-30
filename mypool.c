@@ -29,6 +29,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include <stdbool.h>
+#include "wrappers.h"
 
 
 static void worker_thread(tpool *);
