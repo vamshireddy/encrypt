@@ -15,8 +15,9 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include "thpool.h"
-#include "sharedbuffer.h"
+//#include "sharedbuffer.h"
 #include "encrypt.h"
+#include "mypool.h"
 
 
 
@@ -78,7 +79,8 @@ int main(int argc, char **argv) {
     char outputbuffer[BUFFER_SIZE];   // final output buffer that all threads output will be written to
 
 
-    threadpool pool = thpool_init(NUM_THREADS);
+   // threadpool pool = thpool_init(NUM_THREADS);
+    tpool *pool = threadpool_init(NUM_THREADS,10);
     outwrite = open("/afs/andrew.cmu.edu/usr19/hghanta/apple2/output2",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
     //create a consumer thread and wait for the output buffer to get filled
@@ -116,11 +118,13 @@ int main(int argc, char **argv) {
             }
             tempStore->key = malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
-            thpool_add_work(pool,(void (*)(void *)) getXorOutput, tempStore);
+            //thpool_add_work(pool,(void (*)(void *)) getXorOutput, tempStore);
+            threadpool_add_work(pool,(void (*)(void *)) getXorOutput, tempStore,false);
             left_shift_key(keybuffer, chunk_size);
         }
 
-    thpool_wait(pool);
+    //thpool_wait(pool);
+    threadpool_wait(pool);
     outpack *out = malloc(sizeof(outpack));
     out->buffer=inputbuffer;
     out->end=false;

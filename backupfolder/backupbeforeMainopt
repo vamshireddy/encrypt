@@ -60,21 +60,21 @@ int main(int argc, char **argv) {
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
-                printf("%s",HELP_MESSAGE);
+                //printf("%s",HELP_MESSAGE);
                 break;
             case 'v' :
                 verbose =true;
                 break;
             default:
-                printf("Invalid argument \n ");
-                printf("%s",HELP_MESSAGE);
+                //printf("Invalid argument \n ");
+                //printf("%s",HELP_MESSAGE);
         }
     }
 
     if(verbose){
-        printf("verbose output is on\n");
-        printf("Key file name is %s\n",keyFile);
-        printf("Number of threads are %ld\n",numT);
+        //printf("verbose output is on\n");
+        //printf("Key file name is %s\n",keyFile);
+        //printf("Number of threads are %ld\n",numT);
     }
 
 
@@ -257,21 +257,21 @@ int main(int argc, char **argv) {
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
-                printf("%s",HELP_MESSAGE);
+                //printf("%s",HELP_MESSAGE);
                 break;
             case 'v' :
                 verbose =true;
                 break;
             default:
-                printf("Invalid argument \n ");
-                printf("%s",HELP_MESSAGE);
+                //printf("Invalid argument \n ");
+                //printf("%s",HELP_MESSAGE);
         }
     }
 
     if(verbose){
-        printf("verbose output is on\n");
-        printf("Key file name is %s\n",keyFile);
-        printf("Number of threads are %ld\n",numT);
+        //printf("verbose output is on\n");
+        //printf("Key file name is %s\n",keyFile);
+        //printf("Number of threads are %ld\n",numT);
     }
 
 

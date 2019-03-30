@@ -54,21 +54,21 @@ int main(int argc, char **argv) {
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
-                printf("%s",HELP_MESSAGE);
+                //printf("%s",HELP_MESSAGE);
                 break;
             case 'v' :
                 verbose =true;
                 break;
             default:
-                printf("Invalid argument \n ");
-                printf("%s",HELP_MESSAGE);
+                //printf("Invalid argument \n ");
+                //printf("%s",HELP_MESSAGE);
         }
     }
 
     if(verbose){
-        printf("verbose output is on\n");
-        printf("Key file name is %s\n",keyFile);
-        printf("Number of threads are %ld\n",numT);
+        //printf("verbose output is on\n");
+        //printf("Key file name is %s\n",keyFile);
+        //printf("Number of threads are %ld\n",numT);
     }
 
 
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 
    char outputbuffer[30];                // final output buffer that all threads output will be written to
    void *status;
-   printf("entering main loop\n");
+   //printf("entering main loop\n");
    int pos=0;                           //global buffer position
 
    //create a thread pool with NUM_THREADS
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
        memset(outputbuffer+pos,0, spawned_threads* chunk_size);
        for(int j=0; j < spawned_threads ;j++){
            pthread_join(threads[j],&status);
-           printf("copying thread %d\n",j);
+           //printf("copying thread %d\n",j);
            memcpy(outputbuffer+pos,inputs[j].output,inputs[j].inputsize);
            pos = (int) (pos + inputs[j].inputsize);
         }
@@ -182,7 +182,7 @@ void left_shift_key(uint8_t* array, long size)
     uint8_t overflow = (array[0] >>7) & 0x1;
     for (i = (size - 1); i>=0 ; i--)
     {
-        //printf("i value %d\t",i);
+        ////printf("i value %d\t",i);
         shifted = (array[i] << 1) | overflow;
         overflow = (array[i]>>7) & 0x1;
         array[i] = shifted;

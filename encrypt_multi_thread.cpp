@@ -99,9 +99,9 @@ int main(int argc, char **argv) {
 
 
     if(verbose){
-        printf("verbose output is on\n");
-        printf("Key file name is %s\n",key_file_name);
-        printf("Number of threads are %ld\n",num_of_threads);
+        //printf("verbose output is on\n");
+        //printf("Key file name is %s\n",key_file_name);
+        //printf("Number of threads are %ld\n",num_of_threads);
     }
     key_file = fopen(key_file_name,"rb");
     fseek(key_file,0L,SEEK_END);
@@ -110,9 +110,9 @@ int main(int argc, char **argv) {
     key= (uint8_t*)malloc(key_length);
     fgets((char*)key, key_length, key_file);
     fclose(key_file);
-    printf("key data %0X\n",key);
+    //printf("key data %0X\n",key);
     memcpy(key,input_data, key_length);
-    printf("key data %0X\n",key);
+    //printf("key data %0X\n",key);
 
     /* why 3 ?
       2 sets-input buffers, 1- set for output buffers
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 
     }
 
-    printf("no of threads %d , key_length %d \n",num_of_threads,key_length);
+    //printf("no of threads %d , key_length %d \n",num_of_threads,key_length);
     /* read the data and fill the buffers */
     inputfile = open("/Users/harsha/CLionProjects/encrypt/input2", O_RDONLY);
     do
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
         if(input_done ==false)
         {
-            printf("queue size %d\n",input_queue.size());
+            //printf("queue size %d\n",input_queue.size());
             if(input_queue.size() < MAX_QUEUE_SIZE)
             {
                 found_free_buf =false;
@@ -176,19 +176,19 @@ int main(int argc, char **argv) {
 
                 if(found_free_buf == true)
                 {
-                    printf("found free buf \n");
+                    //printf("found free buf \n");
                     data->is_free = false;
                     memset(data->buffer,0,key_length);
 #ifndef TESTING
                     no_of_bytes_read = read(STDIN_FILENO, data->buffer,key_length);
 #else
                     no_of_bytes_read = read(inputfile,data->buffer,key_length);
-                    printf(" no_of_bytes_read %d \n",no_of_bytes_read);
+                    //printf(" no_of_bytes_read %d \n",no_of_bytes_read);
                     // close(inputfile);
                     // memcpy(data->buffer,input_data1+(no_of_itr*key_length),key_length);
 #endif
-                    printf(" no_of_bytes_read %d \n",no_of_bytes_read);
-                    printf("data read main thread%s \n",data->buffer);
+                    //printf(" no_of_bytes_read %d \n",no_of_bytes_read);
+                    //printf("data read main thread%s \n",data->buffer);
                     if(no_of_bytes_read > 0)
                     {
                         data->token_id = last_assigned_token_id++;
@@ -211,17 +211,17 @@ int main(int argc, char **argv) {
             if((data->is_free == false) &&(data->is_encrypt ==true) &&
                (data->token_id == current_token_id))
             {
-                printf("data printing corresponding token id %d\n",current_token_id);
+                //printf("data printing corresponding token id %d\n",current_token_id);
                 current_token_id ++;
 #ifndef TESTING
                 fprintf(stdout,"%*s",data->buffer_size,data->buffer);
 #else
-                printf("data after encryption %s\n",data->buffer);
+                //printf("data after encryption %s\n",data->buffer);
 #endif
                 data->is_free = true;
             }
         }
-        printf("no of iteration %d\n",no_of_itr++);
+        //printf("no of iteration %d\n",no_of_itr++);
 
     }while((current_token_id != last_assigned_token_id)&& (!(input_done)));
 
@@ -261,9 +261,9 @@ void* thread_function(void * unused)
         {
             index =  input_queue.front();
             input_queue.pop();
-            printf(" processing the data at index %d thread id %0X\n",index,pthread_self());
+            //printf(" processing the data at index %d thread id %0X\n",index,pthread_self());
             data = arr_pointers[index];
-            printf("data is %s\n ",data->buffer);
+            //printf("data is %s\n ",data->buffer);
             is_data_available = true;
         }
         pthread_mutex_unlock(&lock);
@@ -290,7 +290,7 @@ void shift_1bits_left(uint8_t* array, long size)
     uint8_t overflow = (array[0] >>7) & 0x1;
     for (i = (size - 1); i>=0 ; i--)
     {
-        //printf("i value %d\t",i);
+        ////printf("i value %d\t",i);
         shifted = (array[i] << 1) | overflow;
         overflow = (array[i]>>7) & 0x1;
         array[i] = shifted;
