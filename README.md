@@ -20,6 +20,9 @@
     Any errors/status will come out on stderr.
     
     example : encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin
+    
+    
+    Run make in the root folder 
 
 #Design :
     
