@@ -10,7 +10,7 @@ struct tip {
 };
 
 /*
- *
+ * struck to package the output to printer thread
  */
 struct output{
     char *buffer;

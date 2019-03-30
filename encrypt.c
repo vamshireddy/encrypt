@@ -11,6 +11,13 @@
  *  via STDIN taking advantage of parallelism existing on the host machine by spawning multiple threads.
  *  The output will be streamed back to STDOUT. All the errors are print to STRERR.
  *
+ *  The error handling is done inside wrapper.c , All the potential system calls are wrapped inside wrapper function
+ *  calls that start with Captial lettr so that the code looks cleaner.
+ *
+ *  The utility uses two levels of parallelism one between worker threads that does the actual work and the other
+ *  between the printer thread . Shared buffers are used in both the cases to synchronize so that the output does not
+ *  get clobbered .
+ *
  *  The input will be split into chunks , whose size is determined by the length of the encryption key provided.
  *  Each chunk will be operated on with a differnet key that is obtained by left shifting the previous key by 1 bit.
  *  So the key repeats itself every N chunks , where N is the sie of the chunk .
@@ -45,22 +52,23 @@
 #define POOL_QUE_CNST 5
 #define RIGHT_SHIFT_BITS 7
 
+// constants
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
 const size_t CHAR_SIZE= sizeof(char);
 static const int BUFFER_CONSTANT = 4;
 static const int PRINT_BUFFER_SIZE = 100;
 
-// Global variables
-
+// Global variables and forward declarations
 static shared_buffer *shared_buff;
 static void *xor_transform(thread_input *);
 static void print_output();
 static void key_left_shift(uint8_t *, long );
+static void error_out();
 
 
 int main(int argc, char **argv) {
     int c ;
-    char *keyFile;
+    char *keyFile=NULL;
     int  num_threads=0;
     char *temp = Malloc(sizeof(char));
 
@@ -82,20 +90,32 @@ int main(int argc, char **argv) {
         }
     }
 
-
+    if(num_threads == 0 || num_threads <0){
+        fprintf(stderr," Number of threads should be greater than 0");
+        exit(EXIT_FAILURE);
+    }
+    if(keyFile == NULL){
+        fprintf(stderr,"Key file is mandatory , plese provide the path ");
+        exit(EXIT_FAILURE);
+    }
     FILE *key_file = Fopen(keyFile,"rb");
 
     // Find the size of the keyfile
-    fseek(key_file,0L,SEEK_END);
+    if(fseek(key_file,0L,SEEK_END) != 0){
+        error_out();
+    }
     long chunk_size = ftell(key_file);
+    if(chunk_size == -1){
+        error_out();
+    }
     rewind(key_file);
 
 
     size_t buffer_size = (size_t) (BUFFER_CONSTANT * num_threads * chunk_size);
-
     // copy the key into local buffer or we can mmap .
-    unsigned  char key_buffer[chunk_size];
+    uint8_t key_buffer[chunk_size];
     Fread(key_buffer,CHAR_SIZE,chunk_size,key_file);
+    fclose(key_file);
 
     // Create a thread pool to reduce the over head of thread creation on the fly.
     // The pool job que size is determined by the constant
@@ -111,14 +131,15 @@ int main(int argc, char **argv) {
     shared_buff = Malloc(sizeof(shared_buffer));
     sharedbuffer_init(shared_buff,PRINT_BUFFER_SIZE);
 
-
+    long bytes_read=0;
     // Check if input is stopped
-    while(!feof(stdin)) {
+    do {
         // Read more data than all of the treads can process at one time so that we can reduce the
         // number of read calls as they are expensive . So here we are reading buffer const X times of input data.
         char *work_buffer = Malloc(sizeof(char) * buffer_size);
-        long bytes_read= Fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
+        bytes_read= Fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
         if(bytes_read==0) {
+            Free(work_buffer);
             break;
         }
         // variable to keep track of the bytes allocated to various chunks
@@ -158,7 +179,7 @@ int main(int argc, char **argv) {
         out->size=allocated_bytes;
         sharebuffer_insert(shared_buff,out);
 
-    }
+    }while(bytes_read != 0);
 
     // Signal the printer thread to exit
     outpack *end_signal = Malloc(sizeof(outpack));
@@ -202,6 +223,7 @@ static void print_output() {
     while (1) {
         outpack *output = sharedbuffer_remove(shared_buff);
         if(output->end){
+            Free(output);
             break;
         }
         Fwrite(output->buffer,CHAR_SIZE,output->size,stdout);
@@ -227,6 +249,11 @@ static void key_left_shift(uint8_t *existing_key, long size){
         overflow = (uint8_t) ((existing_key[i] >> (RIGHT_SHIFT_BITS)) & 0x1);
         existing_key[i] = shifted;
     }
+}
+
+static void error_out(){
+    fprintf(stderr,"Error is %s:",strerror(errno));
+    exit(EXIT_FAILURE);
 }
 
 
