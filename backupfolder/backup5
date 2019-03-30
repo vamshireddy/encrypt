@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
    //printf("************************");
    tpool *pool = create_tpool(NUM_THREADS, 4 * NUM_THREADS);
    //printf("created threads");
-   int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   int out_write = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
    //create a consumer thread and wait for the output buffer to get filled
    pthread_t tid;
@@ -184,11 +184,11 @@ int main(int argc, char **argv) {
    }
 
    clean_tpool(pool);
-   close(outwrite);
+   close(out_write);
    return 0;
 }
 
-void *getXorOutput(thread_input *threadinput){
+void *xor_transform(thread_input *threadinput){
      int i;
      for( i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
@@ -200,7 +200,7 @@ void *getXorOutput(thread_input *threadinput){
     //act like a producer and add the output to corresponding buffer location
 }
 
-void outputData(char *outputbuffer){
+void print_output(char *outputbuffer){
 
   while(!inputDone) {
 
@@ -226,7 +226,7 @@ void outputData(char *outputbuffer){
   }
 }
 
-void left_shift_key(unsigned char *existingKey, long size){
+void key_left_shift(unsigned char *existingKey, long size){
 
     int i;
     unsigned char shifted ;

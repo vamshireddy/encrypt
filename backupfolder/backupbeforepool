@@ -163,19 +163,19 @@ int main(int argc, char **argv) {
        free(threads);
        free(inputs);
    }
-    int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    write(outwrite,outputbuffer,24);
-    close(outwrite);
+    int out_write = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    write(out_write,outputbuffer,24);
+    close(out_write);
     return 0;
 }
 
-void *getXorOutput(thread_input *threadinput){
+void *xor_transform(thread_input *threadinput){
      for(int i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
      }
 }
 
-void left_shift_key(uint8_t* array, long size)
+void key_left_shift(uint8_t* array, long size)
 {
     int i;
     uint8_t shifted = 0x00;

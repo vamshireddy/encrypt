@@ -1,6 +1,6 @@
 
-  // int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-   //write(outwrite,outp,8);
+  // int out_write = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   //write(out_write,outp,8);
 
 
 

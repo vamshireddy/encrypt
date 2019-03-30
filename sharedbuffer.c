@@ -2,16 +2,27 @@
 // Created by Harsha Vardhan on 2019-03-29.
 //
 
+/***********************************************************************************************************************
+ *                                              SHARD BUFFER
+ *  This module provides a circular buffer that can be shared between a set of threads primarily in a producer
+ *  consumer setting.
+ *  The consumers gets blocked if the buffer is empty and the producers block until atleast a single slot is availiable
+ *  for insertion .
+ *
+ *
+ *
+ */
 #include "sharedbuffer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>
 
-/* $begin sbufc */
 
+/*
+ * Create an empty, bounded, shared FIFO buffer with n slots
+ *
+ */
 
-/* Create an empty, bounded, shared FIFO buffer with n slots */
-/* $begin sharedbuffer_init */
 void sharedbuffer_init(shared_buffer *sp, int n)
 {
     sp->buf = calloc(n, sizeof(void *));
@@ -21,32 +32,40 @@ void sharedbuffer_init(shared_buffer *sp, int n)
     sem_init(&sp->slots, 0, n);      /* Initially, buf has n empty slots   */
     sem_init(&sp->items, 0, 0);      /* Initially, buf has zero data items */
 }
-/* $end sharedbuffer_init */
 
-/* Clean up buffer sp */
-/* $begin sharedbuffer_free */
+
+/*
+ * Clean up buffer sp
+ *
+ */
+
 void sharedbuffer_free(shared_buffer *sp)
 {
     free(sp->buf);
 }
-/* $end sharedbuffer_free */
 
-/* Insert item onto the rear of shared buffer sp */
-/* $begin sharebuffer_insert */
+
+/*
+ * Insert item onto the rear of shared buffer sp
+ *
+ */
+
 void sharebuffer_insert(shared_buffer *sp, void *item)
 {
     sem_wait(&sp->slots);               /* Wait for available slot */
     sem_wait(&sp->mutex);               /* Lock the buffer         */
-    if (++sp->rear >= sp->n)     /* Increment index (mod n) */
+    if (++sp->rear >= sp->n)            /* Increment index (mod n) */
         sp->rear = 0;
-    sp->buf[sp->rear] = item;    /* Insert the item         */
+    sp->buf[sp->rear] = item;           /* Insert the item         */
     sem_post(&sp->mutex);               /* Unlock the buffer       */
     sem_post(&sp->items);               /* Announce available item */
 }
-/* $end sharebuffer_insert */
 
-/* Remove and return the first item from buffer sp */
-/* $begin sharedbuffer_remove */
+
+/*
+ * Remove and return the first item from buffer sp
+ */
+
 void* sharedbuffer_remove(shared_buffer *sp)
 {
     void *item;
@@ -59,5 +78,3 @@ void* sharedbuffer_remove(shared_buffer *sp)
     sem_post(&sp->slots);               /* Announce available slot */
     return item;
 }
-/* $end sharedbuffer_remove */
-/* $end sbufc */

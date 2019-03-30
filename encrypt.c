@@ -1,3 +1,27 @@
+/*
+ *  @Author : Harsha vardhan Ghanta
+ *  @email :  hghanta@andrew.cmu.edu
+ *
+ */
+
+
+/**********************************************************************************************************************
+ *
+ *  The utility is a simple XOR crypto encryptor that can process large chunks of input data streamed in
+ *  via STDIN taking advantage of parallelism existing on the host machine by spawning multiple threads.
+ *  The output will be streamed back to STDOUT. All the errors are print to STRERR.
+ *
+ *  The input will be split into chunks , whose size is determined by the length of the encryption key provided.
+ *  Each chunk will be operated on with a differnet key that is obtained by left shifting the previous key by 1 bit.
+ *  So the key repeats itself every N chunks , where N is the sie of the chunk .
+ *
+ *  @cmdline-arguments N  :Number of threads to spawn . ( Irrespective of the input , there will be an additonal thread
+ *                         that runs as part of the design )
+ *            -argument k : Absolute file path of the keyfile that will be used as encryption key.
+ *
+ **********************************************************************************************************************/
+
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -15,160 +39,187 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include "thpool.h"
-//#include "sharedbuffer.h"
 #include "encrypt.h"
 #include "mypool.h"
 
 
-
-
-
-int outwrite;
-
-shared_buffer *sharedbuff;
-
-
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
 const int CHAR_SIZE= sizeof(char);
-static const int BUFFER_CONSTANT =4;
+static const int BUFFER_CONSTANT = 4;
+static const int PRINT_BUFFER_SIZE = 100;
+
+// Global variables
+static int out_write;
+static shared_buffer *shared_buff;
+static void *xor_transform(thread_input *);
+static void print_output();
+static void key_left_shift(unsigned char *, long );
 
 
 int main(int argc, char **argv) {
-
     int c ;
     char *keyFile;
-    long  NUM_THREADS;
+    int  num_threads=0;
     char *temp = malloc(sizeof(char));
-    bool verbose=false;
+
 
     while ((c = getopt(argc, argv, "k:N:d")) != EOF) {
         switch (c) {
             case 'N':           // Take number of threads as the input
-                NUM_THREADS = strtol(optarg,&temp,10);
+                num_threads = (int) strtol(optarg, &temp, 10);
                 break;
             case 'k':           // key file
                 keyFile = malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
-                //printf("%s",HELP_MESSAGE);
-                break;
-            case 'v' :
-                verbose =true;
+               printf("%s",HELP_MESSAGE);
                 break;
             default:
                 printf("%s",HELP_MESSAGE);
         }
     }
 
+    //Todo : error check
+    FILE *key_file = fopen(keyFile,"rb");
 
-    FILE *keyfile = fopen(keyFile,"rb");
-    fseek(keyfile,0L,SEEK_END);
-    long chunk_size = ftell(keyfile);
-    rewind(keyfile);
-    long BUFFER_SIZE = BUFFER_CONSTANT * NUM_THREADS * chunk_size;
+    // Find the size of the keyfile
+    // Todo : error check
+    fseek(key_file,0L,SEEK_END);
+    long chunk_size = ftell(key_file);
+    rewind(key_file);
 
 
-    unsigned  char keybuffer[chunk_size];
+    long buffer_size = BUFFER_CONSTANT * num_threads * chunk_size;
+    //Todo : change the stack variabel into malloc
+    unsigned  char key_buffer[chunk_size];
     int i;
     for(i=0;i<chunk_size;i++){
-        keybuffer[i] = fgetc(keyfile);
+        key_buffer[i] = (unsigned char) fgetc(key_file);
     }
 
+    // Create a thread pool to reduce the over head of thread creation on the fly
+    tpool *pool = threadpool_init(num_threads,10);
 
-    char outputbuffer[BUFFER_SIZE];   // final output buffer that all threads output will be written to
+    out_write = open("/afs/andrew.cmu.edu/usr19/hghanta/apple2/output2",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-
-    // threadpool pool = thpool_init(NUM_THREADS);
-    tpool *pool = threadpool_init(NUM_THREADS,10);
-    outwrite = open("/afs/andrew.cmu.edu/usr19/hghanta/apple2/output2",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-
-    //create a consumer thread and wait for the output buffer to get filled
+    // Printer Thread : As writing to the output to disk / STDOUT is slow process and there is a chance the program
+    // might get choked on waiting for the task , So creating a seperate thread that will consume the output
+    // and writes to the screen at its own pace.
     pthread_t outputThread;
-    pthread_create(&outputThread, NULL, (void *(*)(void *)) outputData, outputbuffer);
+    pthread_create(&outputThread, NULL, (void *(*)(void *)) print_output, NULL);
 
-    sharedbuff = malloc(sizeof(shared_buffer));
-    sharedbuffer_init(sharedbuff,10);
+    // Shared buffer between the Printer thread and the main program
+    shared_buff = malloc(sizeof(shared_buffer));
+    sharedbuffer_init(shared_buff,PRINT_BUFFER_SIZE);
 
+
+    // Check if input is stopped
     while(!feof(stdin)) {
-        char *inputbuffer = malloc(sizeof(char) * BUFFER_SIZE);
-        long bytes_in_buffer= fread(inputbuffer,CHAR_SIZE,BUFFER_SIZE,stdin);
-        if(bytes_in_buffer==0) {
-            //printf("read 0 byts \n");
+        // Read more data than all of the treads can process at one time so that we can reduce the
+        // number of read calls as they are expensive . So here we are reading buffer const X times of input data.
+        char *work_buffer = malloc(sizeof(char) * buffer_size);
+        long bytes_read= fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
+        if(bytes_read==0) {
             break;
         }
+        // variable to keep track of the bytes allocated to various chunks
+        long allocated_bytes=0;
 
-
-        long processed_bytes=0;
-
-        // Partition the bytes just read into chunk size units
-        while(processed_bytes < bytes_in_buffer){
+        while(allocated_bytes < bytes_read){
+            // Pack all the data that a worker thread might need to process a given chunk of input data
+            // into a structure and insert into thread pool que.
             thread_input *tempStore = malloc(sizeof(thread_input));
-            // map the pointers inside each corresponding chunk to the appropriate offset in the buffer
-            // handlel the edge case where there are no enough bytes to process that are of chunk size
-            if(processed_bytes+chunk_size < bytes_in_buffer) {
-                tempStore->input=  inputbuffer+processed_bytes;
+            if(allocated_bytes+chunk_size < bytes_read) {
+                // offset at which this chunk begins
+                tempStore->input=  work_buffer+allocated_bytes;
                 tempStore->inputsize = chunk_size;
-                processed_bytes=processed_bytes+chunk_size;
+                allocated_bytes=allocated_bytes+chunk_size;
             }else{
-                long left_over = bytes_in_buffer-processed_bytes;
-                tempStore->input= inputbuffer+processed_bytes;
+                long left_over = bytes_read-allocated_bytes;
+                tempStore->input= work_buffer+allocated_bytes;
                 tempStore->inputsize = left_over;
-                processed_bytes += left_over;
+                allocated_bytes += left_over;
             }
+            // Copy the current key into the package for the chunk
             tempStore->key = malloc(sizeof(char) * chunk_size);
-            memcpy(tempStore->key,keybuffer,chunk_size);
-            //thpool_add_work(pool,(void (*)(void *)) getXorOutput, tempStore);
-            threadpool_add_work(pool,(void (*)(void *)) getXorOutput, tempStore,false);
-            left_shift_key(keybuffer, chunk_size);
+            memcpy(tempStore->key,key_buffer,chunk_size);
+            threadpool_add_work(pool, (void (*)(void *)) xor_transform, tempStore, false);
+            // left shift the key  for the next chunk to use
+            key_left_shift(key_buffer, chunk_size);
         }
 
-        //thpool_wait(pool);
+        // wait for the read buffer worth of data to be completely processed
+        // threadpool_wait will wait until all the worker threads finish their work
         threadpool_wait(pool);
+        // pack the processed buffer of data into a struct and push it into a shared buffer with Printer thread .
         outpack *out = malloc(sizeof(outpack));
-        out->buffer=inputbuffer;
+        // buffer that is just processed
+        out->buffer=work_buffer;
         out->end=false;
-        out->size=processed_bytes;
-        sharebuffer_insert(sharedbuff,out);
+        out->size=allocated_bytes;
+        sharebuffer_insert(shared_buff,out);
 
     }
-    outpack *endsignal = malloc(sizeof(outpack));
-    endsignal->size=0;
-    endsignal->end=true;
-    sharebuffer_insert(sharedbuff,endsignal);
+
+    // Signal the printer thread to exit
+    outpack *end_signal = malloc(sizeof(outpack));
+    end_signal->size=0;
+    end_signal->end=true;
+    sharebuffer_insert(shared_buff,end_signal);
     pthread_join(outputThread,NULL);
     return 0;
 }
 
-void *getXorOutput(thread_input *tip){
+/*
+ * @brief Function that performs the actual encryption . It does this inplace . The output is placed
+ * again in the same place as input
+ *
+ * @param  tip pointer to the chunk of data that the function should process
+ */
+static void *xor_transform(thread_input *tip){
     int i;
     for( i=0;i < (tip->inputsize) ; i++){
         tip->input[i] = tip->input[i] ^ (tip->key[i]);
     }
-
 }
 
-void outputData() {
+/*
+ *  @brief This function runs on a different thread and reads the data that has to be printed from the shared
+ *  buffer shared between main thread and itself. It acts like a consumer , as the buffer is FIFO discipliened
+ *  output is not garbled.
+ *
+ *  reads data from the shared buffer
+ *
+ */
+
+static void print_output() {
     while (1) {
-        outpack *output = sharedbuffer_remove(sharedbuff);
+        outpack *output = sharedbuffer_remove(shared_buff);
         if(output->end){
             break;
         }
-        write(outwrite, output->buffer, output->size);
+        write(out_write, output->buffer, output->size);
         free(output);
     }
 }
 
-void left_shift_key(unsigned char *existingKey, long size){
+/*
+ * @brief This function turns the multi byte key handed over to it left by one bit .
+ *
+ * @param existing_key pointer to current key
+ * @param size size of the key
+ */
+static void key_left_shift(unsigned char *existing_key, long size){
 
     int i;
     unsigned char shifted ;
-    unsigned char overflow = (existingKey[0] >>7) & 0x1;
+    unsigned char overflow = (existing_key[0] >>7) & 0x1;
     for (i = (size - 1); i>=0 ; i--)
     {
-        shifted = (existingKey[i] << 1) | overflow;
-        overflow = (existingKey[i]>>7) & 0x1;
-        existingKey[i] = shifted;
+        shifted = (existing_key[i] << 1) | overflow;
+        overflow = (existing_key[i]>>7) & 0x1;
+        existing_key[i] = shifted;
 
 
     }

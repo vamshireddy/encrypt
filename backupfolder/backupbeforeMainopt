@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 
    //create a thread pool with NUM_THREADS
    tpool *pool = threadpool_create(NUM_THREADS,4*NUM_THREADS,0);
-   int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   int out_write = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
    while(!feof(stdin)) {
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
        write(fileno(stdout),outputbuffer,buffsize);
        free(inputs);
    }
-   close(outwrite);
+   close(out_write);
    return 0;
 }
 
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
 
    //create a thread pool with NUM_THREADS
    tpool *pool = create_tpool(NUM_THREADS,4*NUM_THREADS,0);
-   int outwrite = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+   int out_write = open("/Users/harsha/CLionProjects/encrypt/output",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
    while(!feof(stdin)) {
 
@@ -362,11 +362,11 @@ int main(int argc, char **argv) {
        write(fileno(stdout),outputbuffer,buffsize);
        free(inputs);
    }
-   close(outwrite);
+   close(out_write);
    return 0;
 }
 
-void *getXorOutput(thread_input *threadinput){
+void *xor_transform(thread_input *threadinput){
      for(int i=0;i < (threadinput->inputsize) ; i++){
             threadinput->output[i] = threadinput->input[i] ^ (threadinput->key[i]);
      }
@@ -376,7 +376,7 @@ void *getXorOutput(thread_input *threadinput){
     pthread_mutex_unlock(&m);
 }
 
-void left_shift_key(uint8_t *existingKey, long size){
+void key_left_shift(uint8_t *existingKey, long size){
 
     int i;
     uint8_t shifted ;
