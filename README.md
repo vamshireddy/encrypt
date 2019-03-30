@@ -21,6 +21,9 @@
     
     example : encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin
 
+#Design :
+    
+    Please refer to the Desing-encryptor.pdf file for detailed description of design.
 
 #Treee structure 
 
@@ -47,9 +50,6 @@
             The folder contains small tests that I developed to test. 
             It is not exhaustive though.  
             
-#validation : 
-     1. Memory leaks verification via VALGRIND . To make sure that I am freeing up resources in my code .
-     2. Some simple shell script to verify the correctness of the output. 
 
 #Validation : 
 
