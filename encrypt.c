@@ -42,6 +42,8 @@
 #include "mypool.h"
 #include "wrappers.h"
 
+#define POOL_QUE_CNST 5
+#define RIGHT_SHIFT_BITS 7
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
 const size_t CHAR_SIZE= sizeof(char);
@@ -90,12 +92,14 @@ int main(int argc, char **argv) {
 
 
     size_t buffer_size = (size_t) (BUFFER_CONSTANT * num_threads * chunk_size);
-    //Todo : change the stack variabel into malloc
+
+    // copy the key into local buffer or we can mmap .
     unsigned  char key_buffer[chunk_size];
     Fread(key_buffer,CHAR_SIZE,chunk_size,key_file);
-    
-    // Create a thread pool to reduce the over head of thread creation on the fly
-    tpool *pool = threadpool_init(num_threads,10);
+
+    // Create a thread pool to reduce the over head of thread creation on the fly.
+    // The pool job que size is determined by the constant
+    tpool *pool = threadpool_init(num_threads,num_threads *POOL_QUE_CNST);
 
     // Printer Thread : As writing to the output to disk / STDOUT is slow process and there is a chance the program
     // might get choked on waiting for the task , So creating a seperate thread that will consume the output
@@ -113,7 +117,7 @@ int main(int argc, char **argv) {
         // Read more data than all of the treads can process at one time so that we can reduce the
         // number of read calls as they are expensive . So here we are reading buffer const X times of input data.
         char *work_buffer = Malloc(sizeof(char) * buffer_size);
-        long bytes_read= fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
+        long bytes_read= Fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
         if(bytes_read==0) {
             break;
         }
@@ -216,11 +220,11 @@ static void key_left_shift(uint8_t *existing_key, long size){
 
     int i;
     unsigned char shifted ;
-    unsigned char overflow = (uint8_t) ((existing_key[0] >> 7) & 0x1);
+    unsigned char overflow = (uint8_t) ((existing_key[0] >> (RIGHT_SHIFT_BITS)) & 0x1);
     for (i = (int) (size - 1); i >= 0 ; i--)
     {
         shifted = (existing_key[i] << 1) | overflow;
-        overflow = (uint8_t) ((existing_key[i] >> 7) & 0x1);
+        overflow = (uint8_t) ((existing_key[i] >> (RIGHT_SHIFT_BITS)) & 0x1);
         existing_key[i] = shifted;
     }
 }
