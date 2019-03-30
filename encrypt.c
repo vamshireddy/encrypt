@@ -80,11 +80,10 @@ int main(int argc, char **argv) {
         }
     }
 
-    //Todo : error check
+
     FILE *key_file = Fopen(keyFile,"rb");
 
     // Find the size of the keyfile
-    // Todo : error check
     fseek(key_file,0L,SEEK_END);
     long chunk_size = ftell(key_file);
     rewind(key_file);
@@ -93,11 +92,8 @@ int main(int argc, char **argv) {
     size_t buffer_size = (size_t) (BUFFER_CONSTANT * num_threads * chunk_size);
     //Todo : change the stack variabel into malloc
     unsigned  char key_buffer[chunk_size];
-    int i;
-    for(i=0;i<chunk_size;i++){
-        key_buffer[i] = (unsigned char) fgetc(key_file);
-    }
-
+    Fread(key_buffer,CHAR_SIZE,chunk_size,key_file);
+    
     // Create a thread pool to reduce the over head of thread creation on the fly
     tpool *pool = threadpool_init(num_threads,10);
 
