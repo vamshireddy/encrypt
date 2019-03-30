@@ -39,8 +39,8 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include "thpool.h"
-#include "encrypt.h"
-#include "mypool.h"
+#include "../include/encrypt.h"
+#include "../include/mypool.h"
 
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
