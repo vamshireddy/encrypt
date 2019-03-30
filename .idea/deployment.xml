@@ -5,7 +5,7 @@
       <paths name="hound">
         <serverdata>
           <mappings>
-            <mapping deploy="/afs/andrew.cmu.edu/usr19/hghanta/appl3" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/afs/andrew.cmu.edu/usr19/hghanta/apple4" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

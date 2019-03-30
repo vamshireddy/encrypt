@@ -38,8 +38,6 @@ void Pthread_create(pthread_t *tidp, pthread_attr_t *attrp,
         posix_error(rc, "Pthread_create error");
 }
 
-
-
 void Pthread_join(pthread_t tid, void **thread_return) {
     int rc;
 
@@ -52,7 +50,7 @@ void *Malloc(size_t size)
 {
     void *p;
 
-    if ((p  = Malloc(size)) == NULL)
+    if ((p  = malloc(size)) == NULL)
         unix_error("Malloc error");
     return p;
 }
@@ -88,5 +86,6 @@ void Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     if (fwrite(ptr, size, nmemb, stream) < nmemb)
         unix_error("Fwrite error");
 }
+
 
 
