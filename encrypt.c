@@ -40,6 +40,7 @@
 #include <pthread.h>
 #include "encrypt.h"
 #include "mypool.h"
+#include "wrappers.h"
 
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
     int c ;
     char *keyFile;
     int  num_threads=0;
-    char *temp = malloc(sizeof(char));
+    char *temp = Malloc(sizeof(char));
 
 
     while ((c = getopt(argc, argv, "k:N:d")) != EOF) {
@@ -68,7 +69,7 @@ int main(int argc, char **argv) {
                 num_threads = (int) strtol(optarg, &temp, 10);
                 break;
             case 'k':           // key file
-                keyFile = malloc(sizeof(char)*strlen(optarg));
+                keyFile = Malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
@@ -107,7 +108,7 @@ int main(int argc, char **argv) {
     pthread_create(&outputThread, NULL, (void *(*)(void *)) print_output, NULL);
 
     // Shared buffer between the Printer thread and the main program
-    shared_buff = malloc(sizeof(shared_buffer));
+    shared_buff = Malloc(sizeof(shared_buffer));
     sharedbuffer_init(shared_buff,PRINT_BUFFER_SIZE);
 
 
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
     while(!feof(stdin)) {
         // Read more data than all of the treads can process at one time so that we can reduce the
         // number of read calls as they are expensive . So here we are reading buffer const X times of input data.
-        char *work_buffer = malloc(sizeof(char) * buffer_size);
+        char *work_buffer = Malloc(sizeof(char) * buffer_size);
         long bytes_read= fread(work_buffer,CHAR_SIZE,buffer_size,stdin);
         if(bytes_read==0) {
             break;
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
         while(allocated_bytes < bytes_read){
             // Pack all the data that a worker thread might need to process a given chunk of input data
             // into a structure and insert into thread pool que.
-            thread_input *tempStore = malloc(sizeof(thread_input));
+            thread_input *tempStore = Malloc(sizeof(thread_input));
             if(allocated_bytes+chunk_size < bytes_read) {
                 // offset at which this chunk begins
                 tempStore->input=  work_buffer+allocated_bytes;
@@ -150,7 +151,7 @@ int main(int argc, char **argv) {
         // threadpool_wait will wait until all the worker threads finish their work
         threadpool_wait(pool);
         // pack the processed buffer of data into a struct and push it into a shared buffer with Printer thread .
-        outpack *out = malloc(sizeof(outpack));
+        outpack *out = Malloc(sizeof(outpack));
         // buffer that is just processed
         out->buffer=work_buffer;
         out->end=false;
@@ -160,13 +161,11 @@ int main(int argc, char **argv) {
     }
 
     // Signal the printer thread to exit
-    outpack *end_signal = malloc(sizeof(outpack));
+    outpack *end_signal = Malloc(sizeof(outpack));
     end_signal->size=0;
     end_signal->end=true;
     sharebuffer_insert(shared_buff,end_signal);
     pthread_join(outputThread,NULL);
-
-    // c1
     sharedbuffer_free(shared_buff);
     return 0;
 }
@@ -187,7 +186,6 @@ static void *xor_transform(thread_input *tip){
     for( i=0;i < (tip->inputsize) ; i++){
         tip->input[i] = tip->input[i] ^ (tip->key[i]);
     }
-    //c3
     free(tip->key);
 }
 
@@ -207,7 +205,6 @@ static void print_output() {
             break;
         }
         write(STDOUT_FILENO, output->buffer, output->size);
-        // c2
         free(output->buffer);
         free(output);
     }
