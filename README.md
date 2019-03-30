@@ -17,8 +17,9 @@
     parallel on multi-core/multi-CPU machines.   As such, a number of threads
     must be created to process chunks of data concurrently.  Regardless of the
     number of threads, the output cypher text must remain the same.
-
-Any errors/status must come out on stderr.
+    Any errors/status will come out on stderr.
+    
+    example : encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin
 
 
 #Treee structure 
