@@ -14,7 +14,7 @@ struct tip {
  */
 struct output{
     char *buffer;
-    long size;
+    size_t size;
     bool end;
 };
 

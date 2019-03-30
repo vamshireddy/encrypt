@@ -1,6 +1,6 @@
 /*
  *  @Author : Harsha vardhan Ghanta
- *  @email :  hghanta@andrew.cmu.edu
+ *  @email :  hghanta@andrew.cmu.edu,id
  *
  */
 
@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-
+#include <stdint.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -38,13 +38,12 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#include "thpool.h"
-#include "../include/encrypt.h"
-#include "../include/mypool.h"
+#include "encrypt.h"
+#include "mypool.h"
 
 
 static const char *HELP_MESSAGE = " The usage encrypt -k keyfile.bin -n 1 < plain.bin > cypher.bin";
-const int CHAR_SIZE= sizeof(char);
+const size_t CHAR_SIZE= sizeof(char);
 static const int BUFFER_CONSTANT = 4;
 static const int PRINT_BUFFER_SIZE = 100;
 
@@ -53,7 +52,7 @@ static int out_write;
 static shared_buffer *shared_buff;
 static void *xor_transform(thread_input *);
 static void print_output();
-static void key_left_shift(unsigned char *, long );
+static void key_left_shift(uint8_t *, long );
 
 
 int main(int argc, char **argv) {
@@ -90,7 +89,7 @@ int main(int argc, char **argv) {
     rewind(key_file);
 
 
-    long buffer_size = BUFFER_CONSTANT * num_threads * chunk_size;
+    size_t buffer_size = (size_t) (BUFFER_CONSTANT * num_threads * chunk_size);
     //Todo : change the stack variabel into malloc
     unsigned  char key_buffer[chunk_size];
     int i;
@@ -100,8 +99,6 @@ int main(int argc, char **argv) {
 
     // Create a thread pool to reduce the over head of thread creation on the fly
     tpool *pool = threadpool_init(num_threads,10);
-
-    out_write = open("/afs/andrew.cmu.edu/usr19/hghanta/apple2/output2",O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
     // Printer Thread : As writing to the output to disk / STDOUT is slow process and there is a chance the program
     // might get choked on waiting for the task , So creating a seperate thread that will consume the output
@@ -124,7 +121,7 @@ int main(int argc, char **argv) {
             break;
         }
         // variable to keep track of the bytes allocated to various chunks
-        long allocated_bytes=0;
+        size_t allocated_bytes=0;
 
         while(allocated_bytes < bytes_read){
             // Pack all the data that a worker thread might need to process a given chunk of input data
@@ -168,7 +165,15 @@ int main(int argc, char **argv) {
     end_signal->end=true;
     sharebuffer_insert(shared_buff,end_signal);
     pthread_join(outputThread,NULL);
+
+    // c1
+    sharedbuffer_free(shared_buff);
     return 0;
+}
+
+static void clean_up(){
+
+
 }
 
 /*
@@ -182,6 +187,8 @@ static void *xor_transform(thread_input *tip){
     for( i=0;i < (tip->inputsize) ; i++){
         tip->input[i] = tip->input[i] ^ (tip->key[i]);
     }
+    //c3
+    free(tip->key);
 }
 
 /*
@@ -199,7 +206,9 @@ static void print_output() {
         if(output->end){
             break;
         }
-        write(out_write, output->buffer, output->size);
+        write(STDOUT_FILENO, output->buffer, output->size);
+        // c2
+        free(output->buffer);
         free(output);
     }
 }
@@ -210,18 +219,16 @@ static void print_output() {
  * @param existing_key pointer to current key
  * @param size size of the key
  */
-static void key_left_shift(unsigned char *existing_key, long size){
+static void key_left_shift(uint8_t *existing_key, long size){
 
     int i;
     unsigned char shifted ;
-    unsigned char overflow = (existing_key[0] >>7) & 0x1;
-    for (i = (size - 1); i>=0 ; i--)
+    unsigned char overflow = (uint8_t) ((existing_key[0] >> 7) & 0x1);
+    for (i = (int) (size - 1); i >= 0 ; i--)
     {
         shifted = (existing_key[i] << 1) | overflow;
-        overflow = (existing_key[i]>>7) & 0x1;
+        overflow = (uint8_t) ((existing_key[i] >> 7) & 0x1);
         existing_key[i] = shifted;
-
-
     }
 }
 

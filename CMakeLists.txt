@@ -3,4 +3,4 @@ project(encrypt C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(encrypt src/encrypt.c src/sharedbuffer.c include/sharedbuffer.h src/mypool.c include/mypool.h tests/main.c src/wrappers.c include/wrappers.h)
+add_executable(encrypt encrypt.c sharedbuffer.c sharedbuffer.h mypool.c mypool.h tests/main.c wrappers.c wrappers.h)
