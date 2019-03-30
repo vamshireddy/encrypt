@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="hound">
+    <serverData>
+      <paths name="hound">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/afs/andrew.cmu.edu/usr19/hghanta/apple2" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
