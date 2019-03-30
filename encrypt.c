@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     // might get choked on waiting for the task , So creating a seperate thread that will consume the output
     // and writes to the screen at its own pace.
     pthread_t outputThread;
-    pthread_create(&outputThread, NULL, (void *(*)(void *)) print_output, NULL);
+    Pthread_create(&outputThread, NULL, (void *(*)(void *)) print_output, NULL);
 
     // Shared buffer between the Printer thread and the main program
     shared_buff = Malloc(sizeof(shared_buffer));
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
     end_signal->size=0;
     end_signal->end=true;
     sharebuffer_insert(shared_buff,end_signal);
-    pthread_join(outputThread,NULL);
+    Pthread_join(outputThread,NULL);
     sharedbuffer_free(shared_buff);
     return 0;
 }
