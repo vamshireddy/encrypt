@@ -36,7 +36,7 @@ typedef struct tpool tpool;
 typedef struct work work;
 
 
-tpool * threadpool_init(int numThreads,int queSize);
+tpool * threadpool_init(int num_threads,int que_size);
 void threadpool_add_work(tpool *pool,void (*function_p)(void*), void* arg_p,bool end);
 void threadpool_wait(tpool *pool);
 void threadpool_free(tpool *pool);

@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     int c ;
     char *keyFile;
     long  NUM_THREADS;
-    char *temp = malloc(sizeof(char)*4);
+    char *temp = Malloc(sizeof(char)*4);
     bool verbose=false;
 
     while ((c = getopt(argc, argv, "k:N:d")) != EOF) {
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
                 NUM_THREADS = strtol(optarg,&temp,10);
                 break;
             case 'k':           // key file
-                keyFile = malloc(sizeof(char)*strlen(optarg));
+                keyFile = Malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
@@ -142,10 +142,10 @@ int main(int argc, char **argv) {
 
         while(processed_bytes < bytes_in_buffer){
 
-            thread_input *tempStore = malloc(sizeof(thread_input));
+            thread_input *tempStore = Malloc(sizeof(thread_input));
             tempStore->output = outputbuffer+processed_bytes;
             if(processed_bytes+chunk_size < bytes_in_buffer) {
-                tempStore->input = malloc(sizeof(char) * chunk_size);
+                tempStore->input = Malloc(sizeof(char) * chunk_size);
                 tempStore->inputsize = chunk_size;
                 memcpy(tempStore->input,inputbuffer+processed_bytes,chunk_size);
                 processed_bytes +=chunk_size;
@@ -153,14 +153,14 @@ int main(int argc, char **argv) {
 
             }else{
                 long left_over = bytes_in_buffer-processed_bytes;
-                tempStore->input= malloc(sizeof(char) * (left_over));
+                tempStore->input= Malloc(sizeof(char) * (left_over));
                 tempStore->inputsize = left_over;
                 memcpy(tempStore->input,inputbuffer+processed_bytes,left_over);
                 processed_bytes+=left_over;
                 currentInputBufferFill=currentInputBufferFill+left_over;
                 //inputDone=true;
             }
-            tempStore->key = malloc(sizeof(char) * chunk_size);
+            tempStore->key = Malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
             left_shift_key(keybuffer, chunk_size);
             //printf("added one ");

@@ -41,31 +41,31 @@ static void thread_init(tpool *pool,int id);
  *  internal work buffer
  *
  */
-tpool * threadpool_init(int numThreads,int queSize){
+tpool * threadpool_init(int num_threads,int que_size){
 
-    if (numThreads <0) numThreads=0;
+    if (num_threads <0) num_threads=0;
 
-    tpool *pool = malloc(sizeof(tpool));
-    pool->numThreads=numThreads;
+    tpool *pool = Malloc(sizeof(tpool));
+    pool->numThreads=num_threads;
     pool->active_threads=0;
     pool->active_threads=0;
-    pool->que_size=queSize;
+    pool->que_size=que_size;
 
     // array of worker threads
-    pool->threads = malloc(sizeof(pthread_t *)  * numThreads);
-    pool->workque = malloc(sizeof(shared_buffer));
+    pool->threads = Malloc(sizeof(pthread_t *)  * num_threads);
+    pool->workque = Malloc(sizeof(shared_buffer));
 
     // shard buffer to keep track of the work that is being inserted
     sharedbuffer_init(pool->workque,pool->que_size);
 
-    // intialise the threads
+    // initialise the threads
     int i;
-    for (i=0;i<numThreads;i++){
+    for (i=0;i<num_threads;i++){
         thread_init(pool,i);
     }
 
     //wait for all the threads to come online
-    while(pool->active_threads != numThreads){}
+    while(pool->active_threads != num_threads){}
     return pool;
 
 }
@@ -75,7 +75,8 @@ tpool * threadpool_init(int numThreads,int queSize){
  */
 void threadpool_add_work(tpool *pool,void (*function_p)(void*), void* arg_p,bool end){
 
-        work *work_to_be_done = malloc(sizeof(work));
+        // package the parameters into a single struct
+        work *work_to_be_done = Malloc(sizeof(work));
         if(!end) {
             work_to_be_done->workfunction= function_p;
             work_to_be_done->argument=arg_p;
@@ -84,15 +85,21 @@ void threadpool_add_work(tpool *pool,void (*function_p)(void*), void* arg_p,bool
             // kill signal to the worker to exit
             work_to_be_done->end=true;
         }
+
+        // insert the received work on to the que so that any worker can pick it up
         sharebuffer_insert(pool->workque,work_to_be_done);
+        // increment work in que to reflect pending work
         pthread_mutex_lock(&pool->lock);
         pool->workinQue++;
         pthread_mutex_unlock(&pool->lock);
 }
 
 static void thread_init(tpool *pool,int id){
-    pool->threads[id] = malloc(sizeof(pthread_t));
-    pthread_create(pool->threads[id], NULL, (void *(*)(void *)) worker_thread, pool);
+
+    pool->threads[id] = Malloc(sizeof(pthread_t));
+
+    // create worker thread that runs forever
+    Pthread_create(pool->threads[id], NULL, (void *(*)(void *)) worker_thread, pool);
 }
 
 
@@ -110,18 +117,24 @@ void threadpool_wait(tpool *pool){
  *
  */
 void threadpool_free(tpool *pool){
+
     int i=0;
     int numThreads = pool->numThreads;
+    // send a kill signal to each thread
     for(i=0;i<numThreads;i++){
-        work *temp = malloc(sizeof(work));
+        work *temp = Malloc(sizeof(work));
         temp->end = true;
         sharebuffer_insert(pool->workque,temp);
     }
+
+    // wait for all of them to finish
     for( i=0;i< numThreads;i++)
     {
         Pthread_join(*pool->threads[i],NULL);
     }
-    Free(pool->workque);
+
+    // free up resources
+    sharedbuffer_free(pool->workque);
     Free(pool->threads);
     Free(pool);
     printf("Good bye ! \n");
@@ -135,6 +148,7 @@ void threadpool_free(tpool *pool){
  */
 static void worker_thread(tpool *pool){
 
+    // increment live threads counter
     pthread_mutex_lock(&pool->lock);
     pool->active_threads++;
     pthread_mutex_unlock(&pool->lock);
@@ -142,6 +156,7 @@ static void worker_thread(tpool *pool){
 
     while(1){
 
+        // wait till work is pushed on the que
         work *workwaiting = sharedbuffer_remove(pool->workque);
         // do something
          pthread_mutex_lock(&pool->lock);
@@ -153,6 +168,8 @@ static void worker_thread(tpool *pool){
         void*  argument_pointer;
 
         if(workwaiting->end){
+            // c1
+            Free(workwaiting);
             break;
         }
 
@@ -160,13 +177,15 @@ static void worker_thread(tpool *pool){
         argument_pointer=workwaiting->argument;
         function_pointer(argument_pointer);
 
+        // free the packaging struct
         Free(workwaiting);
-        //finished the work
+        // Decrment the count of working threads
         pthread_mutex_lock(&pool->lock);
         pool->workingTrheads--;
         pthread_mutex_unlock(&pool->lock);
 
     }
+    // received signal to exit or kill , change the counters approapirately
     pthread_mutex_lock(&pool->lock);
     pool->workingTrheads--;
     pool->active_threads--;

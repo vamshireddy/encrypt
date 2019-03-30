@@ -20,7 +20,7 @@ void main(){
 
     int i;
     for(i=0;i <10;i++) {
-        int *a = malloc(sizeof(int));
+        int *a = Malloc(sizeof(int));
         *a=i;
         threadpool_add_work(pool, worker,a,false);
     }

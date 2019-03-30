@@ -51,7 +51,7 @@ static const int BUFFER_CONSTANT = 4;
 static const int PRINT_BUFFER_SIZE = 100;
 
 // Global variables
-static int out_write;
+
 static shared_buffer *shared_buff;
 static void *xor_transform(thread_input *);
 static void print_output();
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
                 allocated_bytes += left_over;
             }
             // Copy the current key into the package for the chunk
-            tempStore->key = malloc(sizeof(char) * chunk_size);
+            tempStore->key = Malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,key_buffer,chunk_size);
             threadpool_add_work(pool, (void (*)(void *)) xor_transform, tempStore, false);
             // left shift the key  for the next chunk to use
@@ -219,8 +219,8 @@ static void print_output() {
 static void key_left_shift(uint8_t *existing_key, long size){
 
     int i;
-    unsigned char shifted ;
-    unsigned char overflow = (uint8_t) ((existing_key[0] >> (RIGHT_SHIFT_BITS)) & 0x1);
+    uint8_t shifted ;
+    uint8_t overflow = (uint8_t) ((existing_key[0] >> (RIGHT_SHIFT_BITS)) & 0x1);
     for (i = (int) (size - 1); i >= 0 ; i--)
     {
         shifted = (existing_key[i] << 1) | overflow;

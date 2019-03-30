@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
                 numT = strtol(optarg,&temp,10);
                 break;
             case 'k':           // key file
-                keyFile = malloc(sizeof(char)*strlen(optarg));
+                keyFile = Malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
@@ -131,20 +131,20 @@ int main(int argc, char **argv) {
 
    while(!feof(inputfile)) {
 
-       pthread_t *threads = malloc(sizeof(pthread_t)* NUM_THREADS);
-       thread_input *inputs = malloc(sizeof(thread_input) * NUM_THREADS);
+       pthread_t *threads = Malloc(sizeof(pthread_t)* NUM_THREADS);
+       thread_input *inputs = Malloc(sizeof(thread_input) * NUM_THREADS);
         int spawned_threads=0;
         while(!feof(inputfile) && spawned_threads < NUM_THREADS){
             thread_input *tempStore = inputs+spawned_threads;
-            tempStore->input= malloc(sizeof(char) * chunk_size);
+            tempStore->input= Malloc(sizeof(char) * chunk_size);
             long bytesRead = fread(tempStore->input,chunk_size,1,inputfile);
 
             if(bytesRead == 0) { break;}
             tempStore->inputsize = chunk_size;
-            tempStore->key = malloc(sizeof(char) * chunk_size);
+            tempStore->key = Malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
 
-            tempStore->output = malloc(sizeof(char)* bytesRead);
+            tempStore->output = Malloc(sizeof(char)* bytesRead);
             tempStore->thread_id=spawned_threads;
             //pthread_create(threads+spawned_threads, NULL, (void *(*)(void *)) getXorOutput, tempStore);
             threadpool_add(pool,getXorOutput,tempStore,0);

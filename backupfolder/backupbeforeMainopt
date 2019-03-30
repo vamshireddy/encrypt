@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
                 numT = strtol(optarg,&temp,10);
                 break;
             case 'k':           // key file
-                keyFile = malloc(sizeof(char)*strlen(optarg));
+                keyFile = Malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
@@ -131,17 +131,17 @@ int main(int argc, char **argv) {
 
        long b_in_buffer= fread(inputbuffer,CHAR_SIZE,BUFFER_SIZE,stdin);
 
-       thread_input *inputs = malloc(sizeof(thread_input) * NUM_THREADS);
+       thread_input *inputs = Malloc(sizeof(thread_input) * NUM_THREADS);
        int spawned_threads=0;
         while(!feof(stdin) && spawned_threads < NUM_THREADS){
             thread_input *tempStore = inputs+spawned_threads;
-            tempStore->input= malloc(sizeof(char) * chunk_size);
+            tempStore->input= Malloc(sizeof(char) * chunk_size);
             long bytesRead = fread(tempStore->input, CHAR_SIZE, chunk_size, stdin);
             if(bytesRead == 0) { break;}
             tempStore->inputsize = bytesRead;
-            tempStore->key = malloc(sizeof(char) * chunk_size);
+            tempStore->key = Malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
-            tempStore->output = malloc(sizeof(char)* bytesRead);
+            tempStore->output = Malloc(sizeof(char)* bytesRead);
             tempStore->thread_id=spawned_threads;
             threadpool_add(pool, (void (*)(void *)) getXorOutput, tempStore, 0);
             left_shift_key(keybuffer, chunk_size);
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
                 numT = strtol(optarg,&temp,10);
                 break;
             case 'k':           // key file
-                keyFile = malloc(sizeof(char)*strlen(optarg));
+                keyFile = Malloc(sizeof(char)*strlen(optarg));
                 strncpy(keyFile,optarg,strlen(optarg));
                 break;
             case 'h':           // print the help message
@@ -328,17 +328,17 @@ int main(int argc, char **argv) {
 
        long b_in_buffer= fread(inputbuffer,CHAR_SIZE,BUFFER_SIZE,stdin);
 
-       thread_input *inputs = malloc(sizeof(thread_input) * NUM_THREADS);
+       thread_input *inputs = Malloc(sizeof(thread_input) * NUM_THREADS);
        int spawned_threads=0;
         while(!feof(stdin) && spawned_threads < NUM_THREADS){
             thread_input *tempStore = inputs+spawned_threads;
-            tempStore->input= malloc(sizeof(char) * chunk_size);
+            tempStore->input= Malloc(sizeof(char) * chunk_size);
             long bytesRead = fread(tempStore->input, CHAR_SIZE, chunk_size, stdin);
             if(bytesRead == 0) { break;}
             tempStore->inputsize = bytesRead;
-            tempStore->key = malloc(sizeof(char) * chunk_size);
+            tempStore->key = Malloc(sizeof(char) * chunk_size);
             memcpy(tempStore->key,keybuffer,chunk_size);
-            tempStore->output = malloc(sizeof(char)* bytesRead);
+            tempStore->output = Malloc(sizeof(char)* bytesRead);
             tempStore->thread_id=spawned_threads;
             add_work_to_pool(pool, (void (*)(void *)) getXorOutput, tempStore, 0);
             left_shift_key(keybuffer, chunk_size);

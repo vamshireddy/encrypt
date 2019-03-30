@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
    fseek(key_file,0L,SEEK_END);
    key_length = ftell(key_file);
    rewind(key_file);
-   key= (uint8_t*)malloc(key_length);
+   key= (uint8_t*)Malloc(key_length);
    fgets((char*)key, key_length, key_file);
    fclose(key_file);
    printf("key data %0X\n",key);
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
   MAX_QUEUE_SIZE = num_of_threads *2 ;
   MAX_BUFFERS = MAX_QUEUE_SIZE+num_of_threads;
  
-  arr_pointers = (data_buf_t **)malloc(sizeof(uint32_t) *MAX_BUFFERS);
+  arr_pointers = (data_buf_t **)Malloc(sizeof(uint32_t) *MAX_BUFFERS);
   
   /* Allocate the buffers */
   /* why allocating fixed no of buffers upfront instead allocating them on the fly ?
@@ -131,9 +131,9 @@ int main(int argc, char **argv) {
   for(i =0 ; i < MAX_BUFFERS ; i++)
   {
     
-    data = (data_buf_t *)malloc(sizeof(data_buf_t));
-    data->buffer = (uint8_t*)malloc(sizeof(uint8_t)*key_length);
-    data->correspond_key = (uint8_t*)malloc(sizeof(uint8_t)*key_length);
+    data = (data_buf_t *)Malloc(sizeof(data_buf_t));
+    data->buffer = (uint8_t*)Malloc(sizeof(uint8_t)*key_length);
+    data->correspond_key = (uint8_t*)Malloc(sizeof(uint8_t)*key_length);
     data->is_free = true;
     data->is_encrypt =false;
     arr_pointers[i] = data ;
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,"\n mutex init has failed\n"); 
         return -1; 
    }
-  thread_ids = (pthread_t *)malloc(num_of_threads *sizeof(pthread_t));
+  thread_ids = (pthread_t *)Malloc(num_of_threads *sizeof(pthread_t));
   for(i=0 ; i< num_of_threads ; i++)
   {  
      /* create threads*/

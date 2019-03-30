@@ -52,7 +52,7 @@ void *Malloc(size_t size)
 {
     void *p;
 
-    if ((p  = malloc(size)) == NULL)
+    if ((p  = Malloc(size)) == NULL)
         unix_error("Malloc error");
     return p;
 }
