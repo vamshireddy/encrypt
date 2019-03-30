@@ -2,9 +2,8 @@
 CC = gcc
 CFLAGS = -g -Wall
 
-
-HEADERS = sharedbuffer.h mypool.h encrypt.h
-OBJECTS = sharedbuffer.o mypool.o encrypt.o
+OBJECTS = $(patsubst %.c, %.o, $(wildcard src/*.c))
+HEADERS = $(wildcard inc/*.h)
 
 default: encrypt
 
