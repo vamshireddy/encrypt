@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     }
 
     //Todo : error check
-    FILE *key_file = fopen(keyFile,"rb");
+    FILE *key_file = Fopen(keyFile,"rb");
 
     // Find the size of the keyfile
     // Todo : error check
@@ -186,7 +186,7 @@ static void *xor_transform(thread_input *tip){
     for( i=0;i < (tip->inputsize) ; i++){
         tip->input[i] = tip->input[i] ^ (tip->key[i]);
     }
-    free(tip->key);
+    Free(tip->key);
 }
 
 /*
@@ -204,9 +204,9 @@ static void print_output() {
         if(output->end){
             break;
         }
-        write(STDOUT_FILENO, output->buffer, output->size);
-        free(output->buffer);
-        free(output);
+        Fwrite(output->buffer,CHAR_SIZE,output->size,stdout);
+        Free(output->buffer);
+        Free(output);
     }
 }
 

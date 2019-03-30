@@ -119,11 +119,11 @@ void threadpool_free(tpool *pool){
     }
     for( i=0;i< numThreads;i++)
     {
-        pthread_join(*pool->threads[i],NULL);
+        Pthread_join(*pool->threads[i],NULL);
     }
-    free(pool->workque);
-    free(pool->threads);
-    free(pool);
+    Free(pool->workque);
+    Free(pool->threads);
+    Free(pool);
     printf("Good bye ! \n");
 }
 
@@ -160,7 +160,7 @@ static void worker_thread(tpool *pool){
         argument_pointer=workwaiting->argument;
         function_pointer(argument_pointer);
 
-        free(workwaiting);
+        Free(workwaiting);
         //finished the work
         pthread_mutex_lock(&pool->lock);
         pool->workingTrheads--;
